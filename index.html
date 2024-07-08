@@ -8,6 +8,8 @@
     <link href="static/css/videojs-tps.css" rel="stylesheet" />
     <link href="static/css/videojs-controls.css" rel="stylesheet" />
     <link href="static/css/videojs-hls-quality-selector.css" rel="stylesheet" />
+    <link href="static/css/chapters.css" rel="stylesheet" />
+
 
     <script src="static/js/video.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-eme@3.8.0/dist/videojs-contrib-eme.js"></script>
@@ -16,6 +18,8 @@
     <script src="static/js/videojs-sprite-thumbnails.js"></script>
     <script src="static/js/settings.js"></script>
     <script src="static/js/videojs-hls-quality-selector.js"></script>
+    <script src="static/js/chapters.js"></script>
+
 
     
     <title>Sample Player for adding plugin</title>
@@ -114,6 +118,16 @@
                 rows:24,
                 columns:25,
             });
+
+            player.chapter({ markers:
+            [ 
+                { startTime: 0, label: 'Intro' },
+                { startTime: 120, label: 'How to fly' },
+                { startTime: 240, label: 'How to walk' },
+                { startTime: 360, label: 'How to sleep' },
+                { startTime: 480, label: 'How to get out' }
+            ] }); 
+
     </script>
 </body>
 </html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="static/css/video-js.css" rel="stylesheet" />
+    <link href="static/css/videojs-tps.css" rel="stylesheet" />
+    <link href="static/css/videojs-controls.css" rel="stylesheet" />
+    <link href="static/css/videojs-hls-quality-selector.css" rel="stylesheet" />
+
+    <script src="static/js/video.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-eme@3.8.0/dist/videojs-contrib-eme.js"></script>
+    <scriptsrc="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-quality-levels/2.2.1/videojs-contrib-quality-levels.min.js"></script>
+    <script src=" https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@1.1.4/dist/videojs-hls-quality-selector.min.js "></script>
+    <script src="static/js/videojs-sprite-thumbnails.js"></script>
+    <script src="static/js/settings.js"></script>
+    <script src="static/js/videojs-hls-quality-selector.js"></script>
+
+    
+    <title>Sample Player for adding plugin</title>
+</head>
+
+<body>
+    <video id="video" class="video-js vjs-big-play-centered vjs-theme-plyr" controls preload="auto" style="position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%;"></video>
+
+    <script>
+        var player = videojs("video", {
+            controls: true,
+            fluid: true,
+        }, function () {
+            var player = this;
+            player.eme();
+            player.src({
+                src: isRequestFromSafari() ? "https://d384padtbeqfgy.cloudfront.net/transcoded/8eaHZjXt6km/video.m3u8" : "https://d384padtbeqfgy.cloudfront.net/transcoded/8eaHZjXt6km/video.mpd",
+                type: isRequestFromSafari() ? "application/x-mpegURL" : "application/dash+xml",
+                keySystems: {
+                    "com.widevine.alpha": {
+                        getLicense: function (emeOptions, keyMessage, callback) {
+                            var headers = { "Content-type": "application/octet-stream" };
+                            var body = keyMessage;
+
+                            videojs.xhr({
+                                url: "https://app.tpstreams.com/api/v1/6eafqn/assets/8eaHZjXt6km/drm_license/?access_token=16b608ba-9979-45a0-94fb-b27c1a86b3c1",
+                                method: "POST",
+                                body: body,
+                                responseType: "arraybuffer",
+                                headers: headers,
+                            }, function (err, response, responseBody) {
+                                if (err) {
+                                    callback(err);
+                                    return;
+                                }
+
+                                if (response.statusCode >= 400 && response.statusCode <= 599) {
+                                    callback({});
+                                    return;
+                                }
+
+                                callback(null, responseBody);
+                            });
+                        },
+                    },
+                    "com.apple.fps.1_0": {
+                        certificateUri: "https://static.testpress.in/static/fairplay.cer",
+                        getContentId: function (emeOptions, initData) {
+                            return new TextDecoder("utf-16").decode(initData.slice(16));
+                        },
+                        getLicense: function (emeOptions, contentId, keyMessage, callback) {
+                            var headers = { "Content-type": "application/json" };
+                            var body = JSON.stringify({ spc: base64EncodeUint8Array(keyMessage) });
+
+                            videojs.xhr({
+                                url: "https://app.tpstreams.com/api/v1/6eafqn/assets/8eaHZjXt6km/drm_license/?access_token=16b608ba-9979-45a0-94fb-b27c1a86b3c1&drm_type=fairplay",
+                                method: "POST",
+                                body: body,
+                                responseType: "arraybuffer",
+                                headers: headers,
+                            }, function (err, response, responseBody) {
+                                if (err) {
+                                    callback(err);
+                                    return;
+                                }
+
+                                if (response.statusCode >= 400 && response.statusCode <= 599) {
+                                    callback({});
+                                    return;
+                                }
+
+                                callback(null, responseBody);
+                            });
+                        },
+                    },
+                },
+            });
+            player.hlsQualitySelector({
+                displayCurrentQuality: true,
+            });
+        });
+
+        function isRequestFromSafari() {
+            return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        }
+
+        function base64EncodeUint8Array(input) {
+            return btoa(String.fromCharCode.apply(null, input));
+        }
+
+        player.spriteThumbnails({
+                interval:2,
+                url: 'https://d28qihy7z761lk.cloudfront.net/transcoded/8EYM7R3bXbS/sprite/sprite_image.png',
+                width: 160,
+                height: 90,
+                rows:24,
+                columns:25,
+            });
+    </script>
+</body>
+</html>

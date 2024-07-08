@@ -1,0 +1,24 @@
+.video-js .vjs-big-play-button {
+    order: 0;
+}
+.vjs-progress-control {
+    order: 1;
+}
+.vjs-time-control {
+    order: 2;
+}
+.vjs-volume-panel {
+    order: 3;
+}
+.vjs-menu-button {
+    order: 4;
+}
+.vjs-quality-selector {
+    order: 5;
+}
+.vjs-picture-in-picture {
+    order: 6;
+}
+.vjs-fullscreen-control {
+    order: 7;
+}

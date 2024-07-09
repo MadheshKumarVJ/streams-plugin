@@ -1,0 +1,14 @@
+{
+  "name": "streams-plugins",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "minify": "node minify.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "uglify-js": "^3.18.0"
+  }
+}

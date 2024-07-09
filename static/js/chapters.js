@@ -1,188 +1,277 @@
 (() => {
-    class e extends videojs.getComponent("Component") {
-        constructor(e, t = {}) {
-            super(e, t),
-                (this.resetChildren = this.resetChildren.bind(this)),
-                (this.loadMarkers = this.loadMarkers.bind(this)),
-                (this.onProgressBarHover = this.onProgressBarHover.bind(this)),
-                this.player().on("loadstart", this.resetChildren),
-                this.player().on("loadeddata", this.loadMarkers),
-                this.player().on("playerreset", this.resetChildren);
+    // MarkersDisplay class extends the Video.js Component
+    class MarkersDisplay extends videojs.getComponent('Component') {
+        constructor(player, options = {}) {
+            super(player, options);
+
+            // Bind methods to ensure proper context
+            this.resetChildren = this.resetChildren.bind(this);
+            this.loadMarkers = this.loadMarkers.bind(this);
+            this.onProgressBarHover = this.onProgressBarHover.bind(this);
+
+            // Add event listeners
+            this.player().on('loadstart', this.resetChildren);
+            this.player().on('loadeddata', this.loadMarkers);
+            this.player().on('playerreset', this.resetChildren);
         }
+
+        // Load markers from text track
         loadMarkers() {
-            let e = Array.from(this.player().textTracks()).find((e) => "chapter-markers" === e.label);
-            if (!e) return void this.addChild("marker-empty", { className: "marker-empty", componentClass: "MarkerDisplay", startTime: 0, endTime: this.player().duration() });
-            let t = e.cues_,
-                r = videojs.computedStyle(this.el(), "gap");
-            t.forEach((e, t, s) => {
-                let a = e.startTime,
-                    i = JSON.parse(e.text).label;
-                if (this.player().duration() > a) {
-                    if (0 === t && a > 0) {
-                        let e = "marker-empty";
-                        this.addChild(e, { className: e, componentClass: "MarkerDisplay", endTime: a, gap: r, startTime: 0, label: i });
+            const chapterTrack = Array.from(this.player().textTracks()).find(track => track.label === 'chapter-markers');
+            if (!chapterTrack) {
+                this.addChild('marker-empty', { className: 'marker-empty', componentClass: 'MarkerDisplay', startTime: 0, endTime: this.player().duration() });
+                return;
+            }
+
+            const cues = chapterTrack.cues_;
+            const gap = videojs.computedStyle(this.el(), 'gap');
+
+            // Create marker elements for each cue
+            cues.forEach((cue, index, cues) => {
+                const startTime = cue.startTime;
+                const label = JSON.parse(cue.text).label;
+
+                if (this.player().duration() > startTime) {
+                    if (index === 0 && startTime > 0) {
+                        this.addChild('marker-empty', { className: 'marker-empty', componentClass: 'MarkerDisplay', endTime: startTime, gap, startTime: 0, label });
                     }
-                    let l = `marker-${t}`,
-                        o = s[t + 1];
-                    this.addChild(l, { className: l, componentClass: "MarkerDisplay", endTime: e.endTime, gap: o ? r : void 0, startTime: a, label: i });
+
+                    const nextCue = cues[index + 1];
+                    this.addChild(`marker-${index}`, { className: `marker-${index}`, componentClass: 'MarkerDisplay', endTime: cue.endTime, gap: nextCue ? gap : undefined, startTime, label });
                 }
             });
-            const s = this.player().getChild("ControlBar").getChild("ProgressControl");
-            console.log("Children of ControlBar:", this.player().getChild("ControlBar").children()),
-                console.log("Children of ProgressControl:", s.children()),
-                s.on("mousemove", this.onProgressBarHover),
-                s.on("mouseleave", () => {
-                    this.el()
-                        .querySelectorAll(".cst-marker")
-                        .forEach((e) => e.classList.remove("show-label"));
-                });
-        }
-        onProgressBarHover(e) {
-            const t = this.player().getChild("ControlBar").getChild("ProgressControl").getChild("SeekBar").getChild("MouseTimeDisplay").getMouseTime(e);
-            this.el()
-                .querySelectorAll(".cst-marker")
-                .forEach((e) => e.classList.remove("show-label"));
-            const r = Array.from(this.el().children).find((e) => {
-                const r = e.options_;
-                return r.startTime <= t && t <= r.endTime;
+
+            const progressControl = this.player().getChild('ControlBar').getChild('ProgressControl');
+            progressControl.on('mousemove', this.onProgressBarHover);
+            progressControl.on('mouseleave', () => {
+                this.el().querySelectorAll('.cst-marker').forEach(marker => marker.classList.remove('show-label'));
             });
-            r && r.classList.add("show-label");
         }
+
+        // Handle progress bar hover events
+        onProgressBarHover(event) {
+            const mouseTime = this.player().getChild('ControlBar').getChild('ProgressControl').getChild('SeekBar').getChild('MouseTimeDisplay').getMouseTime(event);
+
+            this.el().querySelectorAll('.cst-marker').forEach(marker => marker.classList.remove('show-label'));
+
+            const marker = Array.from(this.el().children).find(marker => {
+                const { startTime, endTime } = marker.options_;
+                return startTime <= mouseTime && mouseTime <= endTime;
+            });
+
+            if (marker) {
+                marker.classList.add('show-label');
+            }
+        }
+
+        // Reset and remove all marker children
         resetChildren() {
-            this.children().forEach((e) => {
-                e.dispose();
-            }),
-                (this.children_ = []),
-                videojs.dom.emptyEl(this.el());
+            this.children().forEach(child => child.dispose());
+            this.children_ = [];
+            videojs.dom.emptyEl(this.el());
         }
+
+        // Build CSS class string
         buildCSSClass() {
             return `cst-markers ${super.buildCSSClass()}`.trim();
         }
+
+        // Create element for the markers display
         createEl() {
-            return videojs.dom.createEl("div", { className: this.buildCSSClass() });
+            return videojs.dom.createEl('div', { className: this.buildCSSClass() });
         }
+
+        // Dispose of the component and remove event listeners
         dispose() {
-            this.player().off("loadstart", this.resetChildren), this.player().off("loadeddata", this.loadMarkers), this.player().off("playerreset", this.resetChildren), this.resetChildren(), super.dispose();
+            this.player().off('loadstart', this.resetChildren);
+            this.player().off('loadeddata', this.loadMarkers);
+            this.player().off('playerreset', this.resetChildren);
+            this.resetChildren();
+            super.dispose();
         }
     }
-    videojs.registerComponent("MarkersDisplay", e);
-    class t extends videojs.getComponent("Component") {
-        constructor(e, t) {
-            super(e, t);
-            let { gap: r } = t;
-            (this.updateMarkerPlayed = this.updateMarkerPlayed.bind(this)),
-                (this.updateMarkerBuffered = this.updateMarkerBuffered.bind(this)),
-                this.setMarkerWidth(this.markerWidth(), r),
-                this.player().on("timeupdate", this.updateMarkerPlayed),
-                this.player().on("progress", this.updateMarkerBuffered);
+
+    videojs.registerComponent('MarkersDisplay', MarkersDisplay);
+
+    // MarkerDisplay class extends the Video.js Component
+    class MarkerDisplay extends videojs.getComponent('Component') {
+        constructor(player, options) {
+            super(player, options);
+            const { gap } = options;
+
+            // Bind methods to ensure proper context
+            this.updateMarkerPlayed = this.updateMarkerPlayed.bind(this);
+            this.updateMarkerBuffered = this.updateMarkerBuffered.bind(this);
+            this.setMarkerWidth(this.calculateMarkerWidth(), gap);
+
+            // Add event listeners
+            this.player().on('timeupdate', this.updateMarkerPlayed);
+            this.player().on('progress', this.updateMarkerBuffered);
         }
-        setMarkerWidth(e, t) {
-            let r = void 0 !== t ? `width: calc(${e}% - ${t})` : `width: ${e}%`;
-            this.setAttribute("style", r);
+
+        // Set marker width with optional gap
+        setMarkerWidth(width, gap) {
+            const style = gap !== undefined ? `width: calc(${width}% - ${gap})` : `width: ${width}%`;
+            this.setAttribute('style', style);
         }
-        markerWidth() {
-            let { endTime: e, startTime: t } = this.options();
-            return ((e - t) / this.player().duration()) * 100;
+
+        // Calculate marker width as a percentage of the video duration
+        calculateMarkerWidth() {
+            const { endTime, startTime } = this.options();
+            return ((endTime - startTime) / this.player().duration()) * 100;
         }
-        updateMarker(e = 0, t) {
+
+        // Update marker position based on current time
+        updateMarker(currentTime = 0, property) {
             if (!this.parentComponent_.el().getClientRects().length) return;
-            let r = this.player().duration(),
-                s = this.parentComponent_.el().getClientRects()[0].width,
-                a = this.el().offsetLeft,
-                i = (r * a) / s,
-                l = (r * (a + this.el().offsetWidth)) / s;
-            e > l && this.el().style.setProperty(t, "200%"), e < i && this.el().style.setProperty(t, "0%"), e >= i && e <= l && this.el().style.setProperty(t, 100 * Math.abs((e - i) / (l - i)) + "%");
+
+            const duration = this.player().duration();
+            const parentWidth = this.parentComponent_.el().getClientRects()[0].width;
+            const markerOffsetLeft = this.el().offsetLeft;
+            const startTime = (duration * markerOffsetLeft) / parentWidth;
+            const endTime = (duration * (markerOffsetLeft + this.el().offsetWidth)) / parentWidth;
+
+            if (currentTime > endTime) {
+                this.el().style.setProperty(property, '200%');
+            } else if (currentTime < startTime) {
+                this.el().style.setProperty(property, '0%');
+            } else {
+                this.el().style.setProperty(property, `${100 * Math.abs((currentTime - startTime) / (endTime - startTime))}%`);
+            }
         }
+
+        // Update marker based on buffered time
         updateMarkerBuffered() {
-            this.updateMarker(this.player().bufferedEnd(), "--_cst-marker-buffered");
+            this.updateMarker(this.player().bufferedEnd(), '--_cst-marker-buffered');
         }
+
+        // Update marker based on played time
         updateMarkerPlayed() {
-            this.updateMarker(this.player().currentTime(), "--_cst-marker-played");
+            this.updateMarker(this.player().currentTime(), '--_cst-marker-played');
         }
+
+        // Build CSS class string
         buildCSSClass() {
             return `cst-marker ${super.buildCSSClass()}`.trim();
         }
+
+        // Create element for the marker display
         createEl() {
-            let e = super.createEl("div", { className: this.buildCSSClass() }),
-                { label: t } = this.options();
-            if (t) {
-                let r = videojs.dom.createEl("span", { className: "marker-label", textContent: t });
-                e.appendChild(r);
+            const el = super.createEl('div', { className: this.buildCSSClass() });
+            const { label } = this.options();
+
+            if (label) {
+                const labelEl = videojs.dom.createEl('span', { className: 'marker-label', textContent: label });
+                el.appendChild(labelEl);
             }
-            return e;
+
+            return el;
         }
+
+        // Dispose of the component and remove event listeners
         dispose() {
-            this.player().off("timeupdate", this.updateMarkerPlayed), this.player().off("progress", this.updateMarkerBuffered), super.dispose();
+            this.player().off('timeupdate', this.updateMarkerPlayed);
+            this.player().off('progress', this.updateMarkerBuffered);
+            super.dispose();
         }
     }
-    videojs.registerComponent("MarkerDisplay", t);
-    class r extends videojs.getComponent("MouseTimeDisplay") {
-        constructor(e, t) {
-            super(e, videojs.mergeOptions({ children: [{ componentClass: "TimeTooltip", name: "timeTooltip" }] }, t));
+
+    videojs.registerComponent('MarkerDisplay', MarkerDisplay);
+
+    // CustomMouseTimeDisplay class extends the Video.js MouseTimeDisplay
+    class CustomMouseTimeDisplay extends videojs.getComponent('MouseTimeDisplay') {
+        constructor(player, options) {
+            super(player, videojs.mergeOptions({ children: [{ componentClass: 'TimeTooltip', name: 'timeTooltip' }] }, options));
         }
+
+        // Build CSS class string
         buildCSSClass() {
             return `vjs-simple-markers ${super.buildCSSClass()}`.trim();
         }
-        createEl() {
-            return super.createEl();
-        }
     }
-    videojs.registerComponent("MouseTimeDisplay", r);
-    class s extends videojs.getComponent("TimeTooltip") {
-        update(e) {
-            this.write(e);
+
+    videojs.registerComponent('MouseTimeDisplay', CustomMouseTimeDisplay);
+
+    // CustomTimeTooltip class extends the Video.js TimeTooltip
+    class CustomTimeTooltip extends videojs.getComponent('TimeTooltip') {
+        update(content) {
+            this.write(content);
         }
-        updateTime(e, t, r, s) {
-            this.requestNamedAnimationFrame("TimeTooltip#updateTime", () => {
-                let e = this.player_.duration(),
-                    a = this.player_.liveTracker && this.player_.liveTracker.isLive() ? ((e = this.player_.liveTracker.liveWindow()), ((a = e - t * e) < 1 ? "" : "-") + videojs.formatTime(a, e)) : videojs.formatTime(r, e);
-                this.update(a), s && s();
+
+        // Update time tooltip based on event
+        updateTime(event, percent, time, callback) {
+            this.requestNamedAnimationFrame('TimeTooltip#updateTime', () => {
+                const duration = this.player_.duration();
+                const liveTracker = this.player_.liveTracker;
+                const timeText = liveTracker && liveTracker.isLive()
+                    ? ((liveWindow = liveTracker.liveWindow()), `${(liveWindow - percent * liveWindow) < 1 ? '' : '-'}${videojs.formatTime(liveWindow - percent * liveWindow, liveWindow)}`)
+                    : videojs.formatTime(time, duration);
+
+                this.update(timeText);
+                if (callback) callback();
             });
         }
     }
-    videojs.registerComponent("TimeTooltip", s);
-    let a = videojs.getPlugin("plugin");
-    videojs.registerPlugin(
-        "chapter",
-        class extends a {
-            constructor(e, t) {
-                super(e, t),
-                    (this.markers = t.markers),
-                    this.markers || (this.markers = []),
-                    e.addClass("chapter-markers"),
-                    e.getChild("ControlBar").getChild("ProgressControl").getChild("SeekBar").addChild("MarkersDisplay", { componentClass: "MarkersDisplay" }),
-                    (this.loadedMetadata = this.loadedMetadata.bind(this)),
-                    e.on("loadedmetadata", this.loadedMetadata);
-            }
-            addMark(e = []) {
-                if (!e.length) return;
-                let t = this.player.addTextTrack("metadata", "chapter-markers", this.player.language());
-                e.forEach((e, r, s) => {
-                    let a = e.startTime,
-                        i = (e.label, s[r + 1]),
-                        l = { startTime: a, endTime: i ? i.startTime : this.player().duration(), text: JSON.stringify(e) };
-                    t.addCue(l);
+
+    videojs.registerComponent('TimeTooltip', CustomTimeTooltip);
+
+    // ChapterPlugin class extends the Video.js plugin
+    class ChapterPlugin extends videojs.getPlugin('plugin') {
+        constructor(player, options) {
+            super(player, options);
+            this.markers = options.markers || [];
+            player.addClass('chapter-markers');
+            player.getChild('ControlBar').getChild('ProgressControl').getChild('SeekBar').addChild('MarkersDisplay', { componentClass: 'MarkersDisplay' });
+
+            this.loadedMetadata = this.loadedMetadata.bind(this);
+            player.on('loadedmetadata', this.loadedMetadata);
+        }
+
+        // Add markers to the video
+        addMark(markers = []) {
+            if (!markers.length) return;
+
+            const track = this.player.addTextTrack('metadata', 'chapter-markers', this.player.language());
+            markers.forEach((marker, index, markers) => {
+                const { startTime, label } = marker;
+                const nextMarker = markers[index + 1];
+                const cue = { startTime, endTime: nextMarker ? nextMarker.startTime : this.player().duration(), text: JSON.stringify(marker) };
+
+                track.addCue(cue);
+            });
+        }
+
+        // Load markers on metadata loaded event
+        loadedMetadata() {
+            if (this.markers.length) {
+                this.markersTrack = this.player.addTextTrack('metadata', 'chapter-markers', this.player.language());
+
+                this.markers.forEach((marker, index, markers) => {
+                    const { startTime, label } = marker;
+                    const nextMarker = markers[index + 1];
+                    const cue = { startTime, endTime: nextMarker ? nextMarker.startTime : this.player.duration(), text: JSON.stringify(marker) };
+
+                    this.markersTrack.addCue(cue);
                 });
             }
-            loadedMetadata() {
-                this.markers.length &&
-                    ((this.markersTrack = this.player.addTextTrack("metadata", "chapter-markers", this.player.language())),
-                    this.markers.forEach((e, t, r) => {
-                        let s = e.startTime,
-                            a = (e.label, r[t + 1]),
-                            i = { startTime: s, endTime: a ? a.startTime : this.player.duration(), text: JSON.stringify(e) };
-                        this.markersTrack.addCue(i);
-                    }));
-            }
-            dispose() {
-                super.dispose(), videojs.log("the advanced plugin is being disposed");
-            }
-            updateState() {
-                this.setState({ playing: !this.player.paused() });
-            }
-            logState(e) {
-                videojs.log("the player is now " + (this.state.playing ? "playing" : "paused"));
-            }
         }
-    );
+
+        // Dispose of the plugin
+        dispose() {
+            super.dispose();
+            videojs.log('The advanced plugin is being disposed');
+        }
+
+        // Update plugin state
+        updateState() {
+            this.setState({ playing: !this.player.paused() });
+        }
+
+        // Log current state
+        logState(event) {
+            videojs.log(`The player is now ${this.state.playing ? 'playing' : 'paused'}`);
+        }
+    }
+
+    videojs.registerPlugin('chapter', ChapterPlugin);
 })();

@@ -178,42 +178,7 @@
 
     videojs.registerComponent('MarkerDisplay', MarkerDisplay);
 
-    // CustomMouseTimeDisplay class extends the Video.js MouseTimeDisplay
-    class CustomMouseTimeDisplay extends videojs.getComponent('MouseTimeDisplay') {
-        constructor(player, options) {
-            super(player, videojs.mergeOptions({ children: [{ componentClass: 'TimeTooltip', name: 'timeTooltip' }] }, options));
-        }
 
-        // Build CSS class string
-        buildCSSClass() {
-            return `vjs-simple-markers ${super.buildCSSClass()}`.trim();
-        }
-    }
-
-    videojs.registerComponent('MouseTimeDisplay', CustomMouseTimeDisplay);
-
-    // CustomTimeTooltip class extends the Video.js TimeTooltip
-    class CustomTimeTooltip extends videojs.getComponent('TimeTooltip') {
-        update(content) {
-            this.write(content);
-        }
-
-        // Update time tooltip based on event
-        updateTime(event, percent, time, callback) {
-            this.requestNamedAnimationFrame('TimeTooltip#updateTime', () => {
-                const duration = this.player_.duration();
-                const liveTracker = this.player_.liveTracker;
-                const timeText = liveTracker && liveTracker.isLive()
-                    ? ((liveWindow = liveTracker.liveWindow()), `${(liveWindow - percent * liveWindow) < 1 ? '' : '-'}${videojs.formatTime(liveWindow - percent * liveWindow, liveWindow)}`)
-                    : videojs.formatTime(time, duration);
-
-                this.update(timeText);
-                if (callback) callback();
-            });
-        }
-    }
-
-    videojs.registerComponent('TimeTooltip', CustomTimeTooltip);
 
     // ChapterPlugin class extends the Video.js plugin
     class ChapterPlugin extends videojs.getPlugin('plugin') {

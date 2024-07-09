@@ -1,14 +1,18 @@
 {
   "name": "streams-plugins",
   "version": "1.0.0",
-  "description": "",
+  "description": "This project contains a plugin for Video.js used in Tpstreams.",
   "main": "index.js",
   "scripts": {
-    "minify": "node minify.js"
+    "minify": "node minify.js",
+    "start": "node server.js"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "uglify-js": "^3.18.0"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
   }
 }
